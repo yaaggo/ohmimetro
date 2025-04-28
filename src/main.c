@@ -38,15 +38,15 @@ const float E24_VALUES[] = {
 // cores padrão
 const rgb_led COLOR_TABLE[10] = {
     {0, 0, 0},         // 0 - Preto
-    {100, 20, 0},      // 1 - Marrom
-    {255, 0, 0},       // 2 - Vermelho
-    {246, 20, 0},     // 3 - Laranja
-    {255, 255, 0},     // 4 - Amarelo
+    {20, 5, 0},        // 1 - Marrom
+    {150, 0, 0},       // 2 - Vermelho
+    {246, 20, 0},      // 3 - Laranja
+    {150, 100, 0},     // 4 - Amarelo
     {0, 128, 0},       // 5 - Verde
-    {0, 0, 255},       // 6 - Azul
-    {128, 0, 128},     // 7 - Violeta
-    {128, 128, 128},   // 8 - Cinza
-    {255, 255, 255}    // 9 - Branco
+    {0, 0, 128},       // 6 - Azul
+    {128, 0, 80},      // 7 - Violeta
+    {30, 30, 30},      // 8 - Cinza
+    {150, 150, 150}    // 9 - Branco
 };
 
 const char *COLOR_NAMES[10] = {
@@ -67,7 +67,6 @@ void draw_screen(char *, char *, display *);
 float find_nearest_e24(float resistance);
 void get_resistor_colors(float resistance, rgb_led colors[3]);
 
-
 int main() {
     stdio_init_all();
     setup();
@@ -75,15 +74,18 @@ int main() {
     char adc_string[10];
     char resistor_string[10];
 
-    while(true) { // talvez ter que colocar o adc_select_input aqui
-        if (button_get_event() == BUTTON_JOYSTICK) {
+    while(true) {
+
+        // botão B para entrar em bootsel, visando evitar apertar o botão atras da placa
+        if (button_get_event() == BUTTON_B) {
             display_shutdown(&dp);
             matrix_clear();
             matrix_update();
             reset_usb_boot(0, 0);
         }
 
-        float soma = 0.f, media;
+        // coleta dos dados para pelo adc / simulação de dados para depuração
+        float soma = 0.f, media = 0;
 
         #if REAL_VALUES
             for (int i = 0; i < 500; i++) {
@@ -94,13 +96,18 @@ int main() {
         #else
             media = 2047;
         #endif
-
+        
+        // calculo da resistencia do resistor desconhecido
         r_unknown = (KNOWN_RESISTOR * media) / (ADC_RESOLUTION - media);
 
+        // coloca o valor no monitor serial
         DEBUG((int)r_unknown);
-
+        
+        // Pegar o valor mais proximo seguindo a tablela e24
         float r_e24 = find_nearest_e24(r_unknown);
         rgb_led colors[3];
+
+        // conseguir as cores
         get_resistor_colors(r_e24, colors);
 
         sprintf(adc_string, "%1.0f", media);
@@ -115,8 +122,6 @@ int main() {
         matrix_update();
         
         printf("%.0f\n%d %d %d\n", r_e24, colors[0].r, colors[0].g, colors[0].b);
-        // printf("%d %d %d\n",colors[1].r, colors[1].g, colors[1].b);
-        // printf("%d %d %d\n",colors[2].r, colors[2].g, colors[2].b);
 
         sleep_ms(1000);
     }
@@ -157,8 +162,8 @@ float find_nearest_e24(float resistance) {
     float min_diff = 1e9;
     float nearest = 0;
 
-    // Procura o valor E24 mais próximo em todas as escalas
-    for (int exp = -1; exp <= 6; exp++) { // De 0.1 a 10MΩ, pode ajustar se quiser
+    // procura o valor E24 mais próximo em todas as escalas
+    for (int exp = -1; exp <= 6; exp++) { // de 0.1 a 10MΩ, pode ajustar se quiser
         float factor = powf(10, exp);
         for (int i = 0; i < 24; i++) {
             float candidate = E24_VALUES[i] * factor;
@@ -174,11 +179,11 @@ float find_nearest_e24(float resistance) {
 }
 
 
-// Gera as três cores correspondentes
+// gera as três cores correspondentes
 void get_resistor_colors(float resistance, rgb_led colors[3]) {
     int first_digit, second_digit, multiplier = 0;
 
-    // Normaliza para dois dígitos
+    // normaliza para dois dígitos
     while (resistance >= 100) {
         resistance /= 10;
         multiplier++;
@@ -188,7 +193,7 @@ void get_resistor_colors(float resistance, rgb_led colors[3]) {
         multiplier--;
     }
 
-    int value = (int)(resistance + 0.5); // Arredonda
+    int value = (int)(resistance + 0.5); // arredonda
 
     first_digit = value / 10;
     second_digit = value % 10;
