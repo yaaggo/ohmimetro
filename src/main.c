@@ -113,15 +113,17 @@ int main() {
         sprintf(adc_string, "%1.0f", media);
         sprintf(resistor_string, "%1.0f", r_e24);
         
+        // função que desenha tudo na tela
         draw_screen(adc_string, resistor_string, &dp);
-
+        
+        // lógica para printar a matriz
         matrix_clear();
         matrix_set_led_xy(2, 4, colors[0]);
         matrix_set_led_xy(2, 3, colors[1]);
         matrix_set_led_xy(2, 2, colors[2]);
         matrix_update();
         
-        printf("%.0f\n%d %d %d\n", r_e24, colors[0].r, colors[0].g, colors[0].b);
+        printf("resistor apos conversao: %.0f\n", r_e24);
 
         sleep_ms(1000);
     }
